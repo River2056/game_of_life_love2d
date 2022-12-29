@@ -1,4 +1,7 @@
-local cell_width, rows, cols, grid, new_grid
+local rows, cols, grid
+local cell_width = 10
+local counter = 0
+local freq = 0.05
 
 local function make2DArray(r, c)
 	local arr = {}
@@ -24,8 +27,15 @@ local function fill2DArray(arr, r)
 	end
 end
 
+local function checkNeighbor(g, x, y)
+	if x >= 1 and x <= rows and y >= 1 and y <= cols then
+		return g[x][y] == 1
+	end
+	return false
+end
+
 function love.load()
-	cell_width = 20
+	counter = 0
 	rows = love.graphics.getWidth() / cell_width
 	cols = love.graphics.getHeight() / cell_width
 
@@ -33,7 +43,45 @@ function love.load()
 	fill2DArray(grid, rows)
 end
 
-function love.update(dt) end
+function love.update(dt)
+	counter = counter + dt
+	if counter >= freq then
+		local next = make2DArray(rows, cols)
+
+		for i = 1, cols do
+			for j = 1, rows do
+				local checkArr = {
+					checkNeighbor(grid, j - 1, i - 1),
+					checkNeighbor(grid, j, i - 1),
+					checkNeighbor(grid, j + 1, i - 1),
+					checkNeighbor(grid, j - 1, i),
+					checkNeighbor(grid, j + 1, i),
+					checkNeighbor(grid, j - 1, i + 1),
+					checkNeighbor(grid, j, i + 1),
+					checkNeighbor(grid, j + 1, i + 1),
+				}
+				local aliveNeighbors = 0
+				for _, v in pairs(checkArr) do
+					if v then
+						aliveNeighbors = aliveNeighbors + 1
+					end
+				end
+
+				if grid[j][i] == 0 and aliveNeighbors == 3 then
+					next[j][i] = 1
+				elseif grid[j][i] == 1 and (aliveNeighbors > 3 or aliveNeighbors < 2) then
+					next[j][i] = 0
+				else
+					next[j][i] = grid[j][i]
+				end
+			end
+		end
+
+		grid = next
+
+		counter = 0
+	end
+end
 
 function love.keypressed(key)
 	if key == "escape" then
@@ -46,7 +94,6 @@ function love.draw()
 	for i = 1, cols do
 		for j = 1, rows do
 			love.graphics.setColor(0, 0, 0)
-			print(j, i)
 			if grid[j][i] == 1 then
 				love.graphics.rectangle("fill", (j - 1) * cell_width, (i - 1) * cell_width, cell_width, cell_width)
 			else
